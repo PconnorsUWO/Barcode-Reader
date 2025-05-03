@@ -1,37 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Camera App</title>
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Barcode Scanner</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Preload the fallback library if needed -->
+  <link rel="preload" as="script" href="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js" crossorigin>
 </head>
 <body>
-    <div class="container">
-        <h1>Camera App</h1>
+  <div class="app-container">
+    <!-- Header with app title and controls -->
+    <header class="app-header">
+      <h1>Barcode Scanner</h1>
+      <div class="header-controls">
+        <button id="historyToggle" class="icon-button" aria-label="View scan history">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main scanner view -->
+    <main class="scanner-container">
+      <!-- Video feed from camera -->
+      <div class="video-container">
+        <video id="video" playsinline autoplay></video>
         
-        <!-- Camera stream video element -->
-        <div class="video-container">
-            <video id="video" autoplay playsinline></video>
+        <!-- Scanning guide overlay -->
+        <div class="scan-overlay">
+          <div class="scan-guide"></div>
         </div>
         
-        <!-- Button to take a photo -->
-        <div class="controls">
-            <button id="capture">Take Photo</button>
+        <!-- Camera controls -->
+        <div class="camera-controls">
+          <button id="switchCamera" class="control-button" aria-label="Switch camera">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9h18v10H3V9zm15-4l-4-4H8L4 5h14zm-8 14v-2m4 0v-2" />
+              <path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+          
+          <button id="flashlight" class="control-button" aria-label="Toggle flashlight">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18h6m-3-9v9m-5-4l5-12 5 12H7z" />
+            </svg>
+          </button>
         </div>
-        
-        <!-- Error messages will be displayed here -->
-        <div id="error-message" class="error hidden"></div>
-        
-        <!-- Container for the captured photo -->
-        <div class="photo-container hidden" id="photo-container">
-            <h2>Captured Photo</h2>
-            <img id="photo" alt="Captured photo will appear here">
-            <button id="retake">Take Another Photo</button>
+      </div>
+
+      <!-- Scan result display -->
+      <div id="scanResult" class="scan-result hidden">
+        <div class="result-header">
+          <h2>Scan Result</h2>
+          <button id="closeResult" class="icon-button" aria-label="Close result">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+        <div class="result-content">
+          <div class="result-item">
+            <span class="result-label">Code:</span>
+            <span id="resultCode" class="result-value"></span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">Format:</span>
+            <span id="resultFormat" class="result-value"></span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">Time:</span>
+            <span id="resultTime" class="result-value"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual entry fallback -->
+      <div class="manual-entry">
+        <form id="manualEntryForm">
+          <label for="manualCode">Enter code manually:</label>
+          <div class="input-group">
+            <input type="text" id="manualCode" placeholder="Type barcode value...">
+            <button type="submit" class="submit-button">Add</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- Scan history panel -->
+    <aside id="historyPanel" class="history-panel hidden">
+      <div class="history-header">
+        <h2>Scan History</h2>
+        <div class="history-controls">
+          <button id="clearHistory" class="text-button">Clear All</button>
+          <button id="closeHistory" class="icon-button" aria-label="Close history">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <ul id="historyList" class="history-list">
+        <!-- History items will be added here dynamically -->
+      </ul>
+      <div id="emptyHistory" class="empty-history">
+        <p>No scan history yet</p>
+      </div>
+    </aside>
+
+    <!-- Status messages -->
+    <div id="statusMessage" class="status-message hidden">
+      <p id="statusText"></p>
     </div>
-    
-    <script src="js/app.js"></script>
+  </div>
+
+  <!-- Load the main app script -->
+  <script src="js/app.js"></script>
 </body>
 </html>

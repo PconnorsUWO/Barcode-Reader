@@ -1,0 +1,414 @@
+/* Base styles and CSS reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  :root {
+    --primary-color: #3a86ff;
+    --secondary-color: #8338ec;
+    --text-color: #333;
+    --light-text: #fff;
+    --background-color: #f8f9fa;
+    --card-background: #fff;
+    --border-color: #dee2e6;
+    --success-color: #38b000;
+    --error-color: #e63946;
+    --overlay-color: rgba(0, 0, 0, 0.7);
+    --guide-color: rgba(58, 134, 255, 0.5);
+    --guide-border: rgba(58, 134, 255, 0.8);
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
+  
+  button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+  
+  /* App container */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Header styles */
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    z-index: 10;
+  }
+  
+  .app-header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .header-controls {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+  
+  /* Button styles */
+  .icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--light-text);
+    transition: background-color 0.2s;
+  }
+  
+  .icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .icon-button svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .text-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .text-button:hover {
+    background-color: #2a75ee;
+  }
+  
+  .control-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--light-text);
+    transition: background-color 0.2s;
+  }
+  
+  .control-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+  
+  .control-button svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .submit-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    font-weight: 500;
+  }
+  
+  /* Scanner container */
+  .scanner-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Video container */
+  .video-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: #000;
+  }
+  
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* Scan overlay and guide */
+  .scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  
+  .scan-guide {
+    width: 70%;
+    height: 40%;
+    border: 2px solid var(--guide-border);
+    border-radius: var(--border-radius);
+    background-color: var(--guide-color);
+    box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Camera controls */
+  .camera-controls {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+  }
+  
+  /* Scan result */
+  .scan-result {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow);
+    transform: translateY(0);
+    transition: transform 0.3s ease-in-out;
+    z-index: 20;
+  }
+  
+  .scan-result.hidden {
+    transform: translateY(100%);
+  }
+  
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .result-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  
+  .result-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .result-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .result-label {
+    font-weight: 500;
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .result-value {
+    font-size: 1rem;
+    word-break: break-all;
+  }
+  
+  /* Manual entry */
+  .manual-entry {
+    padding: var(--spacing-md);
+    background-color: var(--card-background);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .manual-entry label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  
+  .input-group {
+    display: flex;
+  }
+  
+  .input-group input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    font-size: 1rem;
+  }
+  
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+  
+  /* History panel */
+  .history-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--card-background);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .history-panel.hidden {
+    transform: translateX(100%);
+  }
+  
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .history-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .history-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+  }
+  
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    list-style: none;
+    padding: var(--spacing-md);
+  }
+  
+  .history-item {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .history-item:last-child {
+    border-bottom: none;
+  }
+  
+  .history-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .history-item-format {
+    font-size: 0.8rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 12px;
+  }
+  
+  .history-item-time {
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .history-item-code {
+    font-weight: 500;
+    word-break: break-all;
+  }
+  
+  .empty-history {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
+  }
+  
+  /* Status message */
+  .status-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--overlay-color);
+    color: var(--light-text);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius);
+    text-align: center;
+    z-index: 40;
+    max-width: 80%;
+  }
+  
+  /* Media queries for landscape mode */
+  @media (orientation: landscape) {
+    .scan-guide {
+      width: 40%;
+      height: 60%;
+    }
+    
+    .manual-entry {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(255, 255, 255, 0.9);
+    }
+  }
+  
+  /* Accessibility focus styles */
+  button:focus-visible,
+  input:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
