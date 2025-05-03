@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Camera App</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Camera App</h1>
+        
+        <!-- Camera stream video element -->
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        
+        <!-- Button to take a photo -->
+        <div class="controls">
+            <button id="capture">Take Photo</button>
+        </div>
+        
+        <!-- Error messages will be displayed here -->
+        <div id="error-message" class="error hidden"></div>
+        
+        <!-- Container for the captured photo -->
+        <div class="photo-container hidden" id="photo-container">
+            <h2>Captured Photo</h2>
+            <img id="photo" alt="Captured photo will appear here">
+            <button id="retake">Take Another Photo</button>
+        </div>
+    </div>
+    
+    <script src="js/app.js"></script>
+</body>
+</html>
