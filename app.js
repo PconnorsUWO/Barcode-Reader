@@ -44,6 +44,9 @@ function initApp() {
 
   // Enumerate available video devices
   enumerateDevices()
+
+  // Set up mobile optimizations
+  setupMobileOptimizations()
 }
 
 /**
@@ -63,8 +66,11 @@ async function startCamera() {
     const constraints = {
       video: {
         facingMode: facingMode,
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
+        // Adjust for better mobile performance
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 720, max: 1080 },
+        // Add these for better mobile performance
+        frameRate: { max: 30 },
       },
       audio: false,
     }
@@ -75,6 +81,19 @@ async function startCamera() {
     // Set the stream to the video element
     video.srcObject = stream
     currentStream = stream
+
+    // Ensure video plays on iOS
+    video.setAttribute('playsinline', true)
+    video.setAttribute('autoplay', true)
+    video.muted = true
+
+    // iOS sometimes needs a manual play() call
+    try {
+      await video.play()
+    } catch (e) {
+      console.warn("Auto-play failed, waiting for user interaction", e)
+      // Will need user interaction on iOS
+    }
 
     // Update status
     updateStatus("Camera active. Position barcode in the frame.")
@@ -197,6 +216,33 @@ function handleManualSubmit(event) {
 }
 
 /**
+ * Handle fullscreen and orientation for mobile
+ */
+function setupMobileOptimizations() {
+  // Prevent bounce scrolling on iOS
+  document.body.addEventListener('touchmove', function(event) {
+    event.preventDefault()
+  }, { passive: false })
+  
+  // Lock orientation if supported
+  if (screen.orientation && screen.orientation.lock) {
+    try {
+      // Try to lock to portrait orientation
+      screen.orientation.lock('portrait').catch(e => {
+        console.warn("Orientation lock not supported:", e)
+      })
+    } catch (e) {
+      console.warn("Orientation API not fully supported")
+    }
+  }
+  
+  // Handle iOS standalone mode (when added to home screen)
+  if (navigator.standalone) {
+    document.body.classList.add('ios-standalone')
+  }
+}
+
+/**
  * Handle page visibility changes to manage camera resources
  */
 document.addEventListener("visibilitychange", () => {
@@ -219,8 +265,16 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("orientationchange", () => {
   // Give the browser time to adjust the viewport
   setTimeout(() => {
-    // You could add specific orientation handling here if needed
-    console.log("Orientation changed")
+    // Adjust video display for new orientation
+    const videoTrack = currentStream ? currentStream.getVideoTracks()[0] : null
+    if (videoTrack) {
+      // Force layout recalculation
+      video.style.display = 'none'
+      requestAnimationFrame(() => {
+        video.style.display = 'block'
+        console.log("Orientation changed, display adjusted")
+      })
+    }
   }, 200)
 })
 
