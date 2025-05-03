@@ -34,11 +34,6 @@ function initApp() {
     return
   }
 
-  // Check BarcodeDetector API support
-  checkBarcodeAPISupport().then(support => {
-    console.log('BarcodeDetector API support:', support);
-  });
-
   // Set up event listeners
   cameraSwitchBtn.addEventListener("click", switchCamera)
   retryButton.addEventListener("click", retryCamera)
@@ -49,9 +44,6 @@ function initApp() {
 
   // Enumerate available video devices
   enumerateDevices()
-
-  // Set up mobile optimizations
-  setupMobileOptimizations()
 }
 
 /**
@@ -105,11 +97,6 @@ async function startCamera() {
 
     // Hide any error messages
     errorContainer.classList.add("hidden")
-
-    // Set up barcode detection if available
-    if (window.barcodeAPISupport?.supported) {
-      setupBarcodeDetection();
-    }
   } catch (error) {
     console.error("Error accessing camera:", error)
 
@@ -226,149 +213,6 @@ function handleManualSubmit(event) {
 }
 
 /**
- * Check if the BarcodeDetector API is supported
- * and display supported formats
- */
-async function checkBarcodeAPISupport() {
-  // Check if BarcodeDetector exists in the window object
-  const isBarcodeDetectorSupported = 'BarcodeDetector' in window;
-  
-  // Create an element to show support status
-  const supportStatusElement = document.createElement('div');
-  supportStatusElement.className = 'api-support-status';
-  supportStatusElement.style.padding = '10px';
-  supportStatusElement.style.backgroundColor = isBarcodeDetectorSupported ? '#e1f5fe' : '#ffebee';
-  supportStatusElement.style.marginBottom = '10px';
-  supportStatusElement.style.borderRadius = '4px';
-  
-  if (isBarcodeDetectorSupported) {
-    try {
-      // Get supported formats
-      const supportedFormats = await BarcodeDetector.getSupportedFormats();
-      
-      supportStatusElement.innerHTML = `
-        <strong>Good news!</strong> Your device supports the BarcodeDetector API.<br>
-        Supported formats: ${supportedFormats.join(', ')}
-      `;
-      
-      // Store supported formats for later use
-      window.barcodeAPISupport = {
-        supported: true,
-        formats: supportedFormats
-      };
-    } catch (error) {
-      supportStatusElement.innerHTML = `
-        <strong>Limited Support:</strong> BarcodeDetector API is available but encountered an error: ${error.message}
-      `;
-      window.barcodeAPISupport = { supported: false };
-    }
-  } else {
-    supportStatusElement.innerHTML = `
-      <strong>Limited Support:</strong> Your browser doesn't support the BarcodeDetector API.<br>
-      The app will fall back to manual entry. For better experience, try Chrome on Android.
-    `;
-    window.barcodeAPISupport = { supported: false };
-  }
-  
-  // Add to the DOM - insert before the manual entry section
-  const manualEntry = document.querySelector('.manual-entry');
-  manualEntry.parentNode.insertBefore(supportStatusElement, manualEntry);
-  
-  return window.barcodeAPISupport;
-}
-
-/**
- * Set up barcode detection if supported
- */
-function setupBarcodeDetection() {
-  if (window.barcodeAPISupport?.supported) {
-    try {
-      const barcodeDetector = new BarcodeDetector({
-        // Use all supported formats
-        formats: window.barcodeAPISupport.formats
-      });
-      
-      // Process frames every 300ms to prevent performance issues
-      let lastDetectionTime = 0;
-      
-      // Set up detection interval
-      const detectionInterval = setInterval(() => {
-        if (!currentStream || !video.srcObject || video.paused || video.hidden) {
-          return; // Skip if video isn't playing
-        }
-        
-        const now = Date.now();
-        if (now - lastDetectionTime < 300) {
-          return; // Throttle detection
-        }
-        
-        lastDetectionTime = now;
-        
-        // Process the current video frame
-        barcodeDetector.detect(video)
-          .then(barcodes => {
-            if (barcodes.length > 0) {
-              // We found at least one barcode
-              const barcode = barcodes[0]; // Use the first one detected
-              
-              console.log("Barcode detected:", barcode);
-              updateStatus(`Barcode detected: ${barcode.rawValue}`);
-              
-              // Flash visual feedback
-              document.querySelector('.scan-area').style.border = '2px solid #4CAF50';
-              setTimeout(() => {
-                document.querySelector('.scan-area').style.border = '2px dashed rgba(255, 255, 255, 0.5)';
-              }, 500);
-              
-              // In a real app, you would process the barcode here
-              // processBarcode(barcode.rawValue);
-            }
-          })
-          .catch(err => {
-            console.error("Barcode detection error:", err);
-          });
-      }, 100);
-      
-      // Store the interval ID for cleanup
-      window.barcodeDetectionInterval = detectionInterval;
-      
-      return true;
-    } catch (error) {
-      console.error("Error setting up barcode detection:", error);
-      return false;
-    }
-  }
-  return false;
-}
-
-/**
- * Handle fullscreen and orientation for mobile
- */
-function setupMobileOptimizations() {
-  // Prevent bounce scrolling on iOS
-  document.body.addEventListener('touchmove', function(event) {
-    event.preventDefault()
-  }, { passive: false })
-  
-  // Lock orientation if supported
-  if (screen.orientation && screen.orientation.lock) {
-    try {
-      // Try to lock to portrait orientation
-      screen.orientation.lock('portrait').catch(e => {
-        console.warn("Orientation lock not supported:", e)
-      })
-    } catch (e) {
-      console.warn("Orientation API not fully supported")
-    }
-  }
-  
-  // Handle iOS standalone mode (when added to home screen)
-  if (navigator.standalone) {
-    document.body.classList.add('ios-standalone')
-  }
-}
-
-/**
  * Handle page visibility changes to manage camera resources
  */
 document.addEventListener("visibilitychange", () => {
@@ -391,16 +235,8 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("orientationchange", () => {
   // Give the browser time to adjust the viewport
   setTimeout(() => {
-    // Adjust video display for new orientation
-    const videoTrack = currentStream ? currentStream.getVideoTracks()[0] : null
-    if (videoTrack) {
-      // Force layout recalculation
-      video.style.display = 'none'
-      requestAnimationFrame(() => {
-        video.style.display = 'block'
-        console.log("Orientation changed, display adjusted")
-      })
-    }
+    // You could add specific orientation handling here if needed
+    console.log("Orientation changed")
   }, 200)
 })
 
