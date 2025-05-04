@@ -21,15 +21,14 @@ export function initApp() {
   });
   dom.manualForm.addEventListener('submit', handleManualSubmit);
 
-  // Initialize scanner and devices
-  initQRCodeScanner();
-  enumerateDevices();
+
 
   // Check API connection
   checkServerStatus();
 
-  // Clean up on page unload
-  window.addEventListener('beforeunload', () => {
-    stopScanner();
-  });
+  // Initialize scanner and devices
+  initQRCodeScanner();
+  enumerateDevices();
+  
+
 }

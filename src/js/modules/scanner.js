@@ -8,66 +8,127 @@ let currentCameraIndex = 0;
 let isScanning = false;
 
 export function initQRCodeScanner() {
-  html5QrCode = new html5QrCode('reader', {
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE,
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.CODE_93,
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E
-    ]
-  });
+  // Create and show start button FIRST, before any other operations
+  // that might potentially fail
+  createStartButton();
   
-  updateStatus("Tap 'Start Camera' to begin scanning");
+  try {
+    // Initialize the QR code scanner after button is already visible
+    html5QrCode = new html5QrCode('reader', {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+      ]
+    });
+    
+    updateStatus("Tap 'Start Camera' to begin scanning");
+  } catch (err) {
+    console.error("Error initializing QR scanner:", err);
+    // Even if scanner init fails, button should still work
+    updateStatus("Ready to start camera");
+  }
+}
+
+function createStartButton() {
+  console.log("Creating start button");
   
   // Remove any existing start buttons first
   const existingButton = document.getElementById('start-scanner-button');
-  if (existingButton) existingButton.remove();
+  if (existingButton) {
+    existingButton.remove();
+    console.log("Removed existing button");
+  }
   
-  // Create start button with improved styling for mobile
+  // Create start button with extreme styling for maximum visibility
   const startButton = document.createElement('button');
-  startButton.innerText = 'Start Camera';
+  startButton.innerText = 'START CAMERA';
   startButton.className = 'primary-button';
   startButton.id = 'start-scanner-button';
   
-  // More aggressive styling to ensure visibility on mobile
+  // Extreme styling to ensure visibility on all devices
   Object.assign(startButton.style, {
-    position: 'fixed',  // Changed from absolute to fixed
+    position: 'fixed',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    zIndex: '9999',     // Much higher z-index
-    padding: '15px 25px', // Larger touch target for mobile
-    fontSize: '18px',   // Larger text for mobile
-    background: '#2196F3',
+    zIndex: '2147483647', // Maximum z-index possible
+    padding: '20px 30px',
+    fontSize: '22px',
+    fontWeight: 'bold',
+    background: '#FF5722', // Bright orange for visibility
     color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+    border: '3px solid black',
+    borderRadius: '10px',
+    boxShadow: '0 6px 12px rgba(0,0,0,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    cursor: 'pointer',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    animation: 'pulse 2s infinite'
   });
   
-  // Append to body instead of camera container for maximum visibility
+  // Create and add the pulse animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.05); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Add to body
   document.body.appendChild(startButton);
+  console.log("Start button created and added to document body");
   
+  // Add event listener with error handling
   startButton.addEventListener('click', () => {
-    startButton.remove();
-    startScanner();
+    console.log("Start button clicked");
+    try {
+      startButton.remove();
+      startScanner();
+    } catch (err) {
+      console.error("Error starting scanner:", err);
+      updateStatus("Error starting scanner: " + err.message);
+    }
   });
   
-  // Ensure button is visible even if page is still loading
+  // Double-ensure button is visible by setting a timeout and doing
+  // another visibility check
   setTimeout(() => {
-    // Force the button to refresh its position
-    startButton.style.display = 'none';
-    setTimeout(() => startButton.style.display = 'block', 10);
-  }, 500);
+    console.log("Checking button visibility");
+    if (startButton.offsetParent === null) {
+      console.log("Button is not visible, forcing display");
+      startButton.style.display = 'block';
+      // Force reflow
+      startButton.getBoundingClientRect();
+    }
+  }, 1000);
+  
+  // Set a direct timeout to force scanner start if button isn't clicked
+  // after 10 seconds (optional - remove if unwanted behavior)
+  /* 
+  setTimeout(() => {
+    if (document.getElementById('start-scanner-button')) {
+      console.log("Auto-starting scanner after timeout");
+      startButton.remove();
+      startScanner();
+    }
+  }, 10000);
+  */
 }
 
 export async function startScanner() {
   try {
-    const devices = await Html5Qrcode.getCameras();
+    const devices = await html5QrCode.getCameras();
     if (devices && devices.length) {
       availableCameras = devices;
       const backCameraId = devices.find(d => /back|rear|environment/i.test(d.label))?.id || devices[devices.length - 1].id;
