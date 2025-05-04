@@ -8,7 +8,7 @@ let currentCameraIndex = 0;
 let isScanning = false;
 
 export function initQRCodeScanner() {
-  html5QrCode = new Html5Qrcode('reader', {
+  html5QrCode = new html5QrCode('reader', {
     formatsToSupport: [
       Html5QrcodeSupportedFormats.QR_CODE,
       Html5QrcodeSupportedFormats.EAN_13,
