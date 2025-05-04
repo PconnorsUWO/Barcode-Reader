@@ -138,7 +138,8 @@ function createStartButton() {
 
 export async function startScanner() {
   try {
-    const devices = await html5QrCode.getCameras();
+    // Fix: Use Html5Qrcode class (capital H) instead of the instance variable
+    const devices = await Html5Qrcode.getCameras();
     if (devices && devices.length) {
       availableCameras = devices;
       const backCameraId = devices.find(d => /back|rear|environment/i.test(d.label))?.id || devices[devices.length - 1].id;
