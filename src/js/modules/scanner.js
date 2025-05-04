@@ -20,21 +20,49 @@ export function initQRCodeScanner() {
       Html5QrcodeSupportedFormats.UPC_E
     ]
   });
+  
   updateStatus("Tap 'Start Camera' to begin scanning");
+  
+  // Remove any existing start buttons first
+  const existingButton = document.getElementById('start-scanner-button');
+  if (existingButton) existingButton.remove();
+  
+  // Create start button with improved styling for mobile
   const startButton = document.createElement('button');
   startButton.innerText = 'Start Camera';
   startButton.className = 'primary-button';
-  startButton.style.position = 'absolute';
-  startButton.style.top = '50%';
-  startButton.style.left = '50%';
-  startButton.style.transform = 'translate(-50%, -50%)';
-  startButton.style.zIndex = '20';
-  dom.cameraContainer.appendChild(startButton);
-
+  startButton.id = 'start-scanner-button';
+  
+  // More aggressive styling to ensure visibility on mobile
+  Object.assign(startButton.style, {
+    position: 'fixed',  // Changed from absolute to fixed
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    zIndex: '9999',     // Much higher z-index
+    padding: '15px 25px', // Larger touch target for mobile
+    fontSize: '18px',   // Larger text for mobile
+    background: '#2196F3',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+  });
+  
+  // Append to body instead of camera container for maximum visibility
+  document.body.appendChild(startButton);
+  
   startButton.addEventListener('click', () => {
     startButton.remove();
     startScanner();
   });
+  
+  // Ensure button is visible even if page is still loading
+  setTimeout(() => {
+    // Force the button to refresh its position
+    startButton.style.display = 'none';
+    setTimeout(() => startButton.style.display = 'block', 10);
+  }, 500);
 }
 
 export async function startScanner() {
