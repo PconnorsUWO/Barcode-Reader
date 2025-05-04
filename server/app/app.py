@@ -9,7 +9,7 @@ CORS(app)  # Enable CORS for all routes
 
 # In-memory storage
 scanned_barcodes = []
-data_file = 'scan_history.json'
+data_file = '../data/scan_history.json'
 
 @app.route('/api/scan', methods=['POST'])
 def receive_scan():
