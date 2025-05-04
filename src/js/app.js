@@ -41,7 +41,7 @@ export function initApp() {
 */
 
 // API_BASE_URL should be set to your ngrok URL or local server URL
-const API_BASE_URL = "https://422d-2607-fea8-439d-ba00-297a-631e-e00a-707c.ngrok-free.app";
+const API_BASE_URL = "https://df6a-2607-fea8-439d-ba00-297a-631e-e00a-707c.ngrok-free.app";
 
 
 // DOM Elements
