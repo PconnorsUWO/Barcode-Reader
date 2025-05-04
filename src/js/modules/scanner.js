@@ -8,12 +8,18 @@ let currentCameraIndex = 0;
 let isScanning = false;
 
 export function initQRCodeScanner() {
-  // Create and show start button FIRST, before any other operations
-  // that might potentially fail
-  createStartButton();
+  // First check if the library is loaded
+  if (typeof html5QrCode === 'undefined') {
+    console.error("HTML5 QR Code library not loaded");
+    updateStatus("Error: QR code scanner library not loaded. Please refresh the page.");
+    
+    // Create a button anyway so user can try
+    createStartButton();
+    return;
+  }
   
   try {
-    // Initialize the QR code scanner after button is already visible
+    // Initialize the QR code scanner
     html5QrCode = new html5QrCode('reader', {
       formatsToSupport: [
         Html5QrcodeSupportedFormats.QR_CODE,
@@ -27,11 +33,15 @@ export function initQRCodeScanner() {
       ]
     });
     
-    updateStatus("Tap 'Start Camera' to begin scanning");
+    // Call createStartButton instead of duplicating code
+    createStartButton();
+    
   } catch (err) {
     console.error("Error initializing QR scanner:", err);
-    // Even if scanner init fails, button should still work
-    updateStatus("Ready to start camera");
+    updateStatus("Error initializing scanner. Please try again.");
+    
+    // Create button anyway
+    createStartButton();
   }
 }
 
