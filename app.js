@@ -2,7 +2,11 @@
  * Barcode Scanner App
  * A mobile-first web application for scanning barcodes using device cameras.
  * Implementation uses html5-qrcode library for barcode scanning.
- */
+*/
+
+// API_BASE_URL should be set to your ngrok URL or local server URL
+const API_BASE_URL = "https://422d-2607-fea8-439d-ba00-297a-631e-e00a-707c.ngrok-free.app";
+
 
 // DOM Elements
 const video = document.getElementById("video")
@@ -23,6 +27,62 @@ let currentCameraIndex = 0
 let facingMode = "environment" // Start with back camera by default
 let html5QrCode = null
 let isScanning = false
+
+/**
+ * Send scan data to the server
+ */
+async function sendScanToServer(scanRecord) {
+  try {
+    // Display sending status
+    updateStatus(`Sending ${scanRecord.barcode} to server...`);
+    
+    const response = await fetch(`${API_BASE_URL}/api/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(scanRecord)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Update the UI with server response
+    updateStatus(`Server: ${data.message}`);
+    return data;
+  } catch (error) {
+    console.error('Error sending scan to server:', error);
+    updateStatus(`Error: Could not send to server. ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Check server connection status
+ */
+async function checkServerStatus() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/scan`, {
+      method: 'GET',
+    });
+    
+    if (response.ok) {
+      updateStatus("Server connected successfully");
+      return true;
+    } else {
+      updateStatus(`Server error: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.error("Error connecting to server:", error);
+    updateStatus("Server not connected. Make sure Flask is running");
+    return false;
+  }
+}
+
 
 /**
  * Initialize the application
@@ -47,6 +107,10 @@ function initApp() {
 
   // Enumerate available video devices
   enumerateDevices()
+
+  // Check server status
+  checkServerStatus();
+
 }
 /**
  * Initialize the HTML5 QR Code scanner
@@ -240,9 +304,12 @@ function onScanSuccess(decodedText, decodedResult) {
     location: locationValue,
     timestamp: new Date().toISOString()
   };
-  
+
   // Save to local storage (you could expand this to save to a database)
   saveScanToHistory(scanRecord);
+  
+  // Send to server
+  sendScanToServer(scanRecord);
   
   // In a real app, you would process the barcode here
   // processBarcode(decodedText, locationValue);
@@ -369,34 +436,35 @@ function updateStatus(message) {
  * Handle manual barcode submission
  */
 function handleManualSubmit(event) {
-  event.preventDefault()
-  const barcodeValue = barcodeInput.value.trim()
-  const locationValue = locationInput.value.trim() || "Unknown Location"
+  event.preventDefault();
+  const barcodeValue = barcodeInput.value.trim();
+  const locationValue = locationInput.value.trim() || "Unknown Location";
 
   if (barcodeValue) {
-    // Process the manually entered barcode with location
-    updateStatus(`Manual barcode at ${locationValue}: ${barcodeValue}`)
+    // Process the manually entered barcode
+    updateStatus(`Manual entry: ${barcodeValue} at ${locationValue}`);
 
     // Clear the input
-    barcodeInput.value = ""
-
-    // Log the value with location
-    console.log("Barcode submitted manually at " + locationValue + ":", barcodeValue)
+    barcodeInput.value = "";
     
-    // Save to history
-    saveScanToHistory({
+    // Create scan record
+    const scanRecord = {
       barcode: barcodeValue,
       location: locationValue,
       timestamp: new Date().toISOString(),
       method: "manual"
-    });
-
-    // In a real implementation, you would call the same processing function
-    // processBarcode(barcodeValue, locationValue);
+    };
+    
+    // Save to history
+    saveScanToHistory(scanRecord);
+    
+    // Send to server
+    sendScanToServer(scanRecord);
   } else {
-    updateStatus("Please enter a valid barcode")
+    updateStatus("Please enter a valid barcode");
   }
 }
+
 
 // Clean up resources when the page is closing
 window.addEventListener("beforeunload", () => {
