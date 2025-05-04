@@ -47,25 +47,126 @@ function initApp() {
   // Enumerate available video devices
   enumerateDevices()
 }
-
 /**
  * Initialize the HTML5 QR Code scanner
  */
 function initQRCodeScanner() {
   // Create a new instance of the scanner
-  html5QrCode = new Html5Qrcode("video", { formatsToSupport: [ 
-    Html5QrcodeSupportedFormats.QR_CODE,
-    Html5QrcodeSupportedFormats.EAN_13,
-    Html5QrcodeSupportedFormats.EAN_8,
-    Html5QrcodeSupportedFormats.CODE_39,
-    Html5QrcodeSupportedFormats.CODE_93,
-    Html5QrcodeSupportedFormats.CODE_128,
-    Html5QrcodeSupportedFormats.UPC_A,
-    Html5QrcodeSupportedFormats.UPC_E
-  ] });
+  // Important: Use the "reader" div instead of "video" 
+  html5QrCode = new Html5Qrcode("reader", { 
+    formatsToSupport: [ 
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E
+    ] 
+  });
 
-  // Start the scanner when we initialize the app
-  startScanner()
+  // For iOS, we need to ensure there's user interaction before starting camera
+  // So we'll show a start button if it's the first time
+  if (isIOS()) {
+    updateStatus("Tap 'Start Camera' to begin scanning");
+    const startButton = document.createElement('button');
+    startButton.innerText = "Start Camera";
+    startButton.className = "primary-button";
+    startButton.style.position = "absolute";
+    startButton.style.top = "50%";
+    startButton.style.left = "50%";
+    startButton.style.transform = "translate(-50%, -50%)";
+    startButton.style.zIndex = "20";
+    document.querySelector('.camera-container').appendChild(startButton);
+    
+    startButton.addEventListener('click', () => {
+      startButton.remove();
+      startScanner();
+    });
+  } else {
+    // Start automatically on non-iOS devices
+    startScanner();
+  }
+}
+
+/**
+ * Check if the device is running iOS
+ */
+function isIOS() {
+  return [
+    'iPad Simulator',
+    'iPhone Simulator',
+    'iPod Simulator',
+    'iPad',
+    'iPhone',
+    'iPod'
+  ].includes(navigator.platform)
+  // iPad on iOS 13 detection
+  || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+}
+
+/**
+ * Start the barcode scanner
+ */
+function startScanner() {
+  // First, get all cameras
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      availableCameras = devices
+      // For iOS, prefer the back camera (typically index 0)
+      currentCameraIndex = isIOS() ? 0 : currentCameraIndex;
+      const cameraId = devices[currentCameraIndex].id;
+      
+      // Update UI
+      cameraSwitchBtn.style.display = devices.length > 1 ? "flex" : "none";
+      updateStatus("Starting camera...");
+      
+      // Configuration for scanner - adjusted for iOS
+      const config = {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 150,
+        },
+        aspectRatio: 1.0,
+        disableFlip: isIOS(), // Disable flipping on iOS
+        videoConstraints: {
+          deviceId: { exact: cameraId },
+          width: { ideal: 720, min: 640 },
+          height: { ideal: 720, min: 640 },
+        }
+      };
+
+      // Start scanning
+      html5QrCode.start(
+        cameraId, // Use explicit cameraId instead of facingMode for iOS
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).then(() => {
+        isScanning = true;
+        updateStatus("Camera active. Position barcode in the frame.");
+        errorContainer.classList.add("hidden");
+      }).catch(err => {
+        console.error("Error starting scanner:", err);
+        showError(
+          "Scanner Error", 
+          `Could not start the scanner: ${err.message || err}. Please ensure camera permissions are granted.`
+        );
+      });
+    } else {
+      showError(
+        "No Cameras Found",
+        "No cameras were found on your device. Please ensure you've granted permission and that your device has a camera."
+      );
+    }
+  }).catch(err => {
+    showError(
+      "Camera Access Error",
+      `Error accessing cameras: ${err.message || err}`
+    );
+  });
 }
 
 /**
