@@ -68,26 +68,22 @@ function initQRCodeScanner() {
 
   // For iOS, we need to ensure there's user interaction before starting camera
   // So we'll show a start button if it's the first time
-  if (isIOS()) {
-    updateStatus("Tap 'Start Camera' to begin scanning");
-    const startButton = document.createElement('button');
-    startButton.innerText = "Start Camera";
-    startButton.className = "primary-button";
-    startButton.style.position = "absolute";
-    startButton.style.top = "50%";
-    startButton.style.left = "50%";
-    startButton.style.transform = "translate(-50%, -50%)";
-    startButton.style.zIndex = "20";
-    document.querySelector('.camera-container').appendChild(startButton);
-    
-    startButton.addEventListener('click', () => {
-      startButton.remove();
-      startScanner();
-    });
-  } else {
-    // Start automatically on non-iOS devices
+  updateStatus("Tap 'Start Camera' to begin scanning");
+  const startButton = document.createElement('button');
+  startButton.innerText = "Start Camera";
+  startButton.className = "primary-button";
+  startButton.style.position = "absolute";
+  startButton.style.top = "50%";
+  startButton.style.left = "50%";
+  startButton.style.transform = "translate(-50%, -50%)";
+  startButton.style.zIndex = "20";
+  document.querySelector('.camera-container').appendChild(startButton);
+  
+  startButton.addEventListener('click', () => {
+    startButton.remove();
     startScanner();
-  }
+  });
+  
 }
 
 /**
