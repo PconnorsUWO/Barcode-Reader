@@ -90,27 +90,49 @@ function initQRCodeScanner() {
  * Check if the device is running iOS
  */
 function isIOS() {
-  const userAgent = navigator.userAgent;
-  return /iPad|iPhone|iPod/.test(userAgent) || 
-         (userAgent.includes("Mac") && "ontouchend" in document) ||
-         /iPad|iPhone|iPod/.test(navigator.platform) ||
-         (navigator.userAgent.includes("Safari") && 
-          !navigator.userAgent.includes("Chrome") && 
-          "ontouchend" in document);
+  return [
+    'iPad',
+    'iPhone',
+    'iPod'
+  ].includes(navigator.platform) || 
+  (navigator.userAgent.includes('Mac') && 'ontouchend' in document) ||
+  (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && 
+   /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent));
 }
 
-// Remove the duplicate startScanner() function and use this implementation:
 function startScanner() {
   // First, get all cameras
   Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length) {
       availableCameras = devices;
+      console.log("Available cameras:", devices); // Debug information
       
-      // For iOS, prefer the back camera and use deviceId instead of facingMode
+      // Try to find back camera by label
+      let backCameraId = null;
+      for (let i = 0; i < devices.length; i++) {
+        const label = devices[i].label.toLowerCase();
+        if (label.includes('back') || 
+            label.includes('rear') || 
+            label.includes('environment')) {
+          backCameraId = devices[i].id;
+          currentCameraIndex = i;
+          break;
+        }
+      }
+      
+      // If no back camera found by label, default to the last camera
+      // (typically the back camera on iOS devices)
+      if (!backCameraId && devices.length > 1) {
+        backCameraId = devices[devices.length - 1].id;
+        currentCameraIndex = devices.length - 1;
+      } else if (!backCameraId) {
+        // Only one camera, use it
+        backCameraId = devices[0].id;
+        currentCameraIndex = 0;
+      }
+      
+      // For iOS, use deviceId approach
       if (isIOS()) {
-        currentCameraIndex = 0; // Back camera on iOS is typically index 0
-        const cameraId = devices[currentCameraIndex].id;
-        
         const config = {
           fps: 10,
           qrbox: {
@@ -118,15 +140,15 @@ function startScanner() {
             height: 150,
           },
           aspectRatio: 1.0,
-          disableFlip: true, // Important for iOS
+          disableFlip: false, // Allow flipping for proper orientation
           videoConstraints: {
-            deviceId: { exact: cameraId }
+            deviceId: { exact: backCameraId }
           }
         };
         
-        // Use cameraId directly instead of facingMode for iOS
+        // Use backCameraId directly
         html5QrCode.start(
-          cameraId,
+          backCameraId,
           config,
           onScanSuccess,
           onScanFailure
@@ -136,34 +158,12 @@ function startScanner() {
           errorContainer.classList.add("hidden");
         }).catch(err => {
           console.error("Error starting scanner:", err);
-          showError("Scanner Error", `Could not start the scanner: ${err.message || err}`);
+          // Fall back to facingMode if deviceId fails
+          startWithFacingMode();
         });
       } else {
-        // For non-iOS devices, continue using facingMode approach
-        const config = {
-          fps: 10,
-          qrbox: {
-            width: 250,
-            height: 150,
-          },
-          videoConstraints: {
-            facingMode: facingMode
-          }
-        };
-        
-        html5QrCode.start(
-          { facingMode },
-          config,
-          onScanSuccess,
-          onScanFailure
-        ).then(() => {
-          isScanning = true;
-          updateStatus("Camera active. Position barcode in the frame.");
-          errorContainer.classList.add("hidden");
-        }).catch(err => {
-          console.error("Error starting scanner:", err);
-          showError("Scanner Error", `Could not start the scanner: ${err.message || err}`);
-        });
+        // For non-iOS devices, use facingMode approach
+        startWithFacingMode();
       }
       
       // Update UI
@@ -176,7 +176,36 @@ function startScanner() {
       );
     }
   }).catch(err => {
+    console.error("Camera enumeration error:", err);
     showError("Camera Access Error", `Error accessing cameras: ${err.message || err}`);
+  });
+}
+
+// Helper function to start with facingMode
+function startWithFacingMode() {
+  const config = {
+    fps: 10,
+    qrbox: {
+      width: 250,
+      height: 150,
+    },
+    videoConstraints: {
+      facingMode: "environment" // Force environment (back camera)
+    }
+  };
+  
+  html5QrCode.start(
+    { facingMode: "environment" }, // Always try environment first
+    config,
+    onScanSuccess,
+    onScanFailure
+  ).then(() => {
+    isScanning = true;
+    updateStatus("Camera active. Position barcode in the frame.");
+    errorContainer.classList.add("hidden");
+  }).catch(err => {
+    console.error("Error starting scanner with facingMode:", err);
+    showError("Scanner Error", `Could not start the scanner: ${err.message || err}`);
   });
 }
 
@@ -252,15 +281,11 @@ function switchCamera() {
     html5QrCode.stop().then(() => {
       isScanning = false;
       
-      if (isIOS()) {
-        // On iOS, switch camera index
-        currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-      } else {
-        // For other devices, toggle facing mode
-        facingMode = facingMode === "environment" ? "user" : "environment";
-      }
-      
+      // For all devices, switch camera index
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
       updateStatus("Switching camera...");
+      
+      // Restart with the new camera
       startScanner();
     }).catch(err => {
       console.error("Error stopping scanner:", err);
