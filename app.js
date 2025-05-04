@@ -1,7 +1,7 @@
 /**
  * Barcode Scanner App
  * A mobile-first web application for scanning barcodes using device cameras.
- * This implementation focuses on camera access and UI without actual barcode scanning.
+ * Implementation uses html5-qrcode library for barcode scanning.
  */
 
 // DOM Elements
@@ -18,8 +18,10 @@ const barcodeInput = document.getElementById("barcode-input")
 // App state
 let currentStream = null
 let availableCameras = []
-const currentCameraIndex = 0
+let currentCameraIndex = 0
 let facingMode = "environment" // Start with back camera by default
+let html5QrCode = null
+let isScanning = false
 
 /**
  * Initialize the application
@@ -29,7 +31,7 @@ function initApp() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showError(
       "Camera Not Supported",
-      "Your browser does not support camera access. Please try using a modern browser like Chrome, Firefox, or Safari.",
+      "Your browser does not support camera access. Please try using a modern browser like Chrome, Firefox, or Safari."
     )
     return
   }
@@ -39,81 +41,136 @@ function initApp() {
   retryButton.addEventListener("click", retryCamera)
   manualForm.addEventListener("submit", handleManualSubmit)
 
-  // Start camera
-  startCamera()
+  // Initialize HTML5 QR Code scanner
+  initQRCodeScanner()
 
   // Enumerate available video devices
   enumerateDevices()
 }
 
 /**
- * Start the camera with the current facing mode
+ * Initialize the HTML5 QR Code scanner
  */
-async function startCamera() {
-  try {
-    // Stop any existing stream
-    if (currentStream) {
-      stopCurrentStream()
-    }
+function initQRCodeScanner() {
+  // Create a new instance of the scanner
+  html5QrCode = new Html5Qrcode("video", { formatsToSupport: [ 
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.CODE_93,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E
+  ] });
 
-    // Set status message
-    updateStatus("Requesting camera access...")
+  // Start the scanner when we initialize the app
+  startScanner()
+}
 
-    // Request camera access with preferred facing mode
-    const constraints = {
-      video: {
-        facingMode: facingMode,
-        // Adjust for better mobile performance
-        width: { ideal: 1280, max: 1920 },
-        height: { ideal: 720, max: 1080 },
-        // Add these for better mobile performance
-        frameRate: { max: 30 },
-      },
-      audio: false,
-    }
+/**
+ * Start the barcode scanner
+ */
+function startScanner() {
+  // First, get all cameras
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      availableCameras = devices
+      const cameraId = devices[currentCameraIndex].id
+      
+      // Update UI
+      cameraSwitchBtn.style.display = devices.length > 1 ? "flex" : "none"
+      updateStatus("Starting camera...")
+      
+      // Configuration for scanner
+      const config = {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 150,
+        },
+        // Use the selected camera id
+        videoConstraints: {
+          deviceId: cameraId,
+          facingMode: facingMode,
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+        }
+      };
 
-    // Get user media
-    const stream = await navigator.mediaDevices.getUserMedia(constraints)
-
-    // Set the stream to the video element
-    video.srcObject = stream
-    currentStream = stream
-
-    // Ensure video plays on iOS
-    video.setAttribute('playsinline', true)
-    video.setAttribute('autoplay', true)
-    video.muted = true
-
-    // iOS sometimes needs a manual play() call
-    try {
-      await video.play()
-    } catch (e) {
-      console.warn("Auto-play failed, waiting for user interaction", e)
-      // Will need user interaction on iOS
-    }
-
-    // Update status
-    updateStatus("Camera active. Position barcode in the frame.")
-
-    // Hide any error messages
-    errorContainer.classList.add("hidden")
-  } catch (error) {
-    console.error("Error accessing camera:", error)
-
-    // Handle specific errors
-    if (error.name === "NotAllowedError") {
-      showError(
-        "Camera Access Denied",
-        "You need to grant camera permission to use the barcode scanner. Please check your browser settings and try again.",
-      )
-    } else if (error.name === "NotFoundError") {
-      showError(
-        "No Camera Found",
-        "We couldn't find a camera on your device. Please make sure your camera is connected and working properly.",
-      )
+      // Start scanning
+      html5QrCode.start(
+        { facingMode },
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).then(() => {
+        isScanning = true;
+        updateStatus("Camera active. Position barcode in the frame.")
+        errorContainer.classList.add("hidden")
+      }).catch(err => {
+        console.error("Error starting scanner:", err);
+        showError(
+          "Scanner Error", 
+          `Could not start the scanner: ${err.message || err}`
+        );
+      });
     } else {
-      showError("Camera Error", `There was a problem accessing your camera: ${error.message}`)
+      showError(
+        "No Cameras Found",
+        "No cameras were found on your device. Please ensure you've granted permission and that your device has a camera."
+      );
     }
+  }).catch(err => {
+    showError(
+      "Camera Access Error",
+      `Error accessing cameras: ${err.message || err}`
+    );
+  });
+}
+
+/**
+ * Handle successful scan
+ */
+function onScanSuccess(decodedText, decodedResult) {
+  // Play a success sound (optional)
+  const successSound = new Audio("data:audio/wav;base64,SUQzAwAAAAAAJlRQRTEAAAAcAAAAU291bmRKYXkuY29tIFNvdW5kIEVmZmVjdHMA//uQxAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAADAAAGhgBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVWqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr///////////////////////////////////////////8AAAA8TEFNRTMuMTAwBK8AAAAAAAAAABSAJAJAQgAAgAAAAYaKY3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
+  successSound.play().catch(e => console.log("Sound play error:", e));
+  
+  // Highlight the scan area to provide visual feedback
+  const scanArea = document.querySelector('.scan-area');
+  scanArea.style.border = '2px solid #4CAF50';
+  setTimeout(() => {
+    scanArea.style.border = '2px dashed rgba(255, 255, 255, 0.5)';
+  }, 500);
+  
+  // Show the result
+  updateStatus(`Scanned: ${decodedText}`);
+  
+  // Log the result 
+  console.log(`Barcode scanned: ${decodedText}`, decodedResult);
+  
+  // In a real app, you would process the barcode here
+  // processBarcode(decodedText);
+  
+  // Pause for a moment to show the result before scanning again
+  if (isScanning) {
+    html5QrCode.pause().then(() => {
+      setTimeout(() => {
+        html5QrCode.resume();
+      }, 2000);
+    });
+  }
+}
+
+/**
+ * Handle scan failures
+ */
+function onScanFailure(error) {
+  // Most failures are just "no barcode found" which we can ignore
+  // Only log actual errors
+  if (error !== "No QR code found") {
+    console.error("Scan error:", error);
   }
 }
 
@@ -140,26 +197,35 @@ async function enumerateDevices() {
  * Switch between available cameras
  */
 function switchCamera() {
-  // Toggle facing mode
-  facingMode = facingMode === "environment" ? "user" : "environment"
-
-  // Update status
-  updateStatus("Switching camera...")
-
-  // Restart camera with new facing mode
-  startCamera()
+  // Stop the current scanner
+  if (html5QrCode && isScanning) {
+    html5QrCode.stop().then(() => {
+      isScanning = false;
+      
+      // Toggle facing mode
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      
+      // Update status
+      updateStatus("Switching camera...");
+      
+      // Restart scanner
+      startScanner();
+    }).catch(err => {
+      console.error("Error stopping scanner:", err);
+    });
+  }
 }
 
 /**
- * Stop the current video stream
+ * Stop the current scanning session
  */
-function stopCurrentStream() {
-  if (currentStream) {
-    currentStream.getTracks().forEach((track) => {
-      track.stop()
-    })
-    video.srcObject = null
-    currentStream = null
+function stopScanner() {
+  if (html5QrCode && isScanning) {
+    html5QrCode.stop().then(() => {
+      isScanning = false;
+    }).catch(err => {
+      console.error("Error stopping scanner:", err);
+    });
   }
 }
 
@@ -178,7 +244,7 @@ function showError(title, message) {
  */
 function retryCamera() {
   errorContainer.classList.add("hidden")
-  startCamera()
+  startScanner()
 }
 
 /**
@@ -196,16 +262,16 @@ function handleManualSubmit(event) {
   const barcodeValue = barcodeInput.value.trim()
 
   if (barcodeValue) {
-    // In a real app, you would process the barcode here
+    // Process the manually entered barcode
     updateStatus(`Manual barcode entered: ${barcodeValue}`)
 
     // Clear the input
     barcodeInput.value = ""
 
-    // For demo purposes, just log the value
+    // Log the value
     console.log("Barcode submitted manually:", barcodeValue)
 
-    // In a real implementation, you would call a function to process the barcode
+    // In a real implementation, you would call the same processing function
     // processBarcode(barcodeValue);
   } else {
     updateStatus("Please enter a valid barcode")
@@ -213,32 +279,28 @@ function handleManualSubmit(event) {
 }
 
 /**
- * Handle page visibility changes to manage camera resources
+ * Handle page visibility changes to manage scanner resources
  */
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    // Page is hidden, pause the camera to save resources
-    if (video.srcObject) {
-      video.pause()
+    // Page is hidden, pause scanning to save resources
+    if (html5QrCode && isScanning) {
+      html5QrCode.pause();
     }
   } else {
-    // Page is visible again, resume the camera
-    if (video.srcObject) {
-      video.play()
+    // Page is visible again, resume scanning
+    if (html5QrCode && isScanning) {
+      html5QrCode.resume();
     }
   }
 })
 
-/**
- * Handle orientation changes to adjust the UI
- */
-window.addEventListener("orientationchange", () => {
-  // Give the browser time to adjust the viewport
-  setTimeout(() => {
-    // You could add specific orientation handling here if needed
-    console.log("Orientation changed")
-  }, 200)
-})
+// Clean up resources when the page is closing
+window.addEventListener("beforeunload", () => {
+  if (html5QrCode && isScanning) {
+    html5QrCode.stop().catch(err => console.error(err));
+  }
+});
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", initApp)

@@ -10,7 +10,8 @@
   <div class="app-container">
     <!-- Camera view container -->
     <div class="camera-container">
-      <video id="video" playsinline autoplay></video>
+      <div id="reader"></div>
+      <video id="video" playsinline autoplay style="display:none;"></video>
       
       <!-- Scanning guide overlay -->
       <div class="scan-overlay">
@@ -61,6 +62,8 @@
     </div>
   </div>
   
+  <!-- Add html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
