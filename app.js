@@ -14,6 +14,7 @@ const errorText = document.getElementById("error-text")
 const retryButton = document.getElementById("retry-button")
 const manualForm = document.getElementById("manual-form")
 const barcodeInput = document.getElementById("barcode-input")
+const locationInput = document.getElementById("location-input")
 
 // App state
 let currentStream = null
@@ -217,6 +218,9 @@ function onScanSuccess(decodedText, decodedResult) {
   const successSound = new Audio("data:audio/wav;base64,SUQzAwAAAAAAJlRQRTEAAAAcAAAAU291bmRKYXkuY29tIFNvdW5kIEVmZmVjdHMA//uQxAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAADAAAGhgBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVWqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqr///////////////////////////////////////////8AAAA8TEFNRTMuMTAwBK8AAAAAAAAAABSAJAJAQgAAgAAAAYaKY3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
   successSound.play().catch(e => console.log("Sound play error:", e));
   
+  // Get the current location from input field
+  const locationValue = locationInput.value.trim() || "Unknown Location";
+  
   // Highlight the scan area to provide visual feedback
   const scanArea = document.querySelector('.scan-area');
   scanArea.style.border = '2px solid #4CAF50';
@@ -224,14 +228,24 @@ function onScanSuccess(decodedText, decodedResult) {
     scanArea.style.border = '2px dashed rgba(255, 255, 255, 0.5)';
   }, 500);
   
-  // Show the result
-  updateStatus(`Scanned: ${decodedText}`);
+  // Show the result with location
+  updateStatus(`Scanned at ${locationValue}: ${decodedText}`);
   
-  // Log the result 
-  console.log(`Barcode scanned: ${decodedText}`, decodedResult);
+  // Log the result with location
+  console.log(`Barcode scanned at ${locationValue}: ${decodedText}`, decodedResult);
+  
+  // Store the scan in a structured format
+  const scanRecord = {
+    barcode: decodedText,
+    location: locationValue,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Save to local storage (you could expand this to save to a database)
+  saveScanToHistory(scanRecord);
   
   // In a real app, you would process the barcode here
-  // processBarcode(decodedText);
+  // processBarcode(decodedText, locationValue);
   
   // Pause for a moment to show the result before scanning again
   if (isScanning) {
@@ -240,6 +254,26 @@ function onScanSuccess(decodedText, decodedResult) {
         html5QrCode.resume();
       }, 2000);
     });
+  }
+}
+
+/**
+ * Save scan to history (local storage)
+ */
+function saveScanToHistory(scanRecord) {
+  try {
+    // Get existing history
+    const scanHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]');
+    
+    // Add new scan record
+    scanHistory.push(scanRecord);
+    
+    // Save back to local storage (limit to last 100 scans)
+    localStorage.setItem('scanHistory', JSON.stringify(
+      scanHistory.slice(-100)
+    ));
+  } catch (error) {
+    console.error("Error saving scan to history:", error);
   }
 }
 
@@ -337,40 +371,32 @@ function updateStatus(message) {
 function handleManualSubmit(event) {
   event.preventDefault()
   const barcodeValue = barcodeInput.value.trim()
+  const locationValue = locationInput.value.trim() || "Unknown Location"
 
   if (barcodeValue) {
-    // Process the manually entered barcode
-    updateStatus(`Manual barcode entered: ${barcodeValue}`)
+    // Process the manually entered barcode with location
+    updateStatus(`Manual barcode at ${locationValue}: ${barcodeValue}`)
 
     // Clear the input
     barcodeInput.value = ""
 
-    // Log the value
-    console.log("Barcode submitted manually:", barcodeValue)
+    // Log the value with location
+    console.log("Barcode submitted manually at " + locationValue + ":", barcodeValue)
+    
+    // Save to history
+    saveScanToHistory({
+      barcode: barcodeValue,
+      location: locationValue,
+      timestamp: new Date().toISOString(),
+      method: "manual"
+    });
 
     // In a real implementation, you would call the same processing function
-    // processBarcode(barcodeValue);
+    // processBarcode(barcodeValue, locationValue);
   } else {
     updateStatus("Please enter a valid barcode")
   }
 }
-
-/**
- * Handle page visibility changes to manage scanner resources
- */
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    // Page is hidden, pause scanning to save resources
-    if (html5QrCode && isScanning) {
-      html5QrCode.pause();
-    }
-  } else {
-    // Page is visible again, resume scanning
-    if (html5QrCode && isScanning) {
-      html5QrCode.resume();
-    }
-  }
-})
 
 // Clean up resources when the page is closing
 window.addEventListener("beforeunload", () => {

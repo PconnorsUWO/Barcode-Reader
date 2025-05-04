@@ -265,6 +265,22 @@ input[type="text"]:focus {
   transform: scale(0.98);
 }
 
+/* Location input styles */
+.location-container {
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+}
+
+.location-input-group {
+  margin-bottom: 0;
+}
+
+.location-input-group input {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
 /* Utility classes */
 .hidden {
   display: none;
