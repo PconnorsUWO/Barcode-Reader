@@ -184,14 +184,8 @@ function onScanSuccess(decodedText, decodedResult) {
   dom.scanArea.style.border = '2px solid #4CAF50';
   setTimeout(() => dom.scanArea.style.border = '2px dashed rgba(255, 255, 255, 0.5)', 500);
   const locationValue = dom.locationInput.value.trim() || 'Unknown Location';
-  const vinValue = dom.vinInput.value.trim() || '';
   updateStatus(`Scanned at ${locationValue}: ${decodedText}`);
-  const scanRecord = { 
-    barcode: decodedText, 
-    location: locationValue, 
-    vin: vinValue,
-    timestamp: new Date().toISOString() 
-  };
+  const scanRecord = { barcode: decodedText, location: locationValue, timestamp: new Date().toISOString() };
   saveScanToHistory(scanRecord);
   sendScanToServer(scanRecord);
   if (isScanning) html5QrCode.pause().then(() => setTimeout(() => html5QrCode.resume(), 2000));
