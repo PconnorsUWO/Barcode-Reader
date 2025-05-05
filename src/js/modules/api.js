@@ -1,6 +1,6 @@
 import { updateStatus } from '../modules/ui.js';
 
-const API_BASE_URL = 'https://a1b3-2607-fea8-439d-ba00-297a-631e-e00a-707c.ngrok-free.app';
+const API_BASE_URL = 'https://0d1e-2607-fea8-439d-ba00-f4d4-8a72-f2dd-b1a.ngrok-free.app';
 
 export async function sendScanToServer(scanRecord) {
   try {
