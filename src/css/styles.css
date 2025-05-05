@@ -273,7 +273,11 @@ input[type="text"]:focus {
 }
 
 .location-input-group {
-  margin-bottom: 0;
+  margin-bottom: 8px;  /* Added to create spacing between fields */
+}
+
+.location-input-group:last-child {
+  margin-bottom: 0;  /* Remove margin from last item */
 }
 
 .location-input-group input {
