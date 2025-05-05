@@ -20,7 +20,18 @@ export function initQRCodeScanner() {
   
   try {
     // Initialize the QR code scanner
-    html5QrCode = new Html5Qrcode('reader', verbose = false);
+    html5QrCode = new Html5Qrcode('reader', {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+      ]
+    });
     
     // Call createStartButton instead of duplicating code
     createStartButton();
