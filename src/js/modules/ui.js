@@ -9,6 +9,7 @@ export const dom = {
     manualForm: document.getElementById('manual-form'),
     barcodeInput: document.getElementById('barcode-input'),
     locationInput: document.getElementById('location-input'),
+    vinInput: document.getElementById('vin-input'),
     scanArea: document.querySelector('.scan-area'),
     cameraContainer: document.querySelector('.camera-container'),
   };

@@ -20,18 +20,7 @@ export function initQRCodeScanner() {
   
   try {
     // Initialize the QR code scanner
-    html5QrCode = new Html5Qrcode('reader', {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E
-      ]
-    });
+    html5QrCode = new Html5Qrcode('reader', verbose = false);
     
     // Call createStartButton instead of duplicating code
     createStartButton();
@@ -184,8 +173,14 @@ function onScanSuccess(decodedText, decodedResult) {
   dom.scanArea.style.border = '2px solid #4CAF50';
   setTimeout(() => dom.scanArea.style.border = '2px dashed rgba(255, 255, 255, 0.5)', 500);
   const locationValue = dom.locationInput.value.trim() || 'Unknown Location';
+  const vinValue = dom.vinInput.value.trim() || '';
   updateStatus(`Scanned at ${locationValue}: ${decodedText}`);
-  const scanRecord = { barcode: decodedText, location: locationValue, timestamp: new Date().toISOString() };
+  const scanRecord = { 
+    barcode: decodedText, 
+    location: locationValue, 
+    vin: vinValue,
+    timestamp: new Date().toISOString() 
+  };
   saveScanToHistory(scanRecord);
   sendScanToServer(scanRecord);
   if (isScanning) html5QrCode.pause().then(() => setTimeout(() => html5QrCode.resume(), 2000));

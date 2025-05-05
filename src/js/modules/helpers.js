@@ -16,10 +16,17 @@ export function handleManualSubmit(event) {
   event.preventDefault();
   const barcodeValue = dom.barcodeInput.value.trim();
   const locationValue = dom.locationInput.value.trim() || 'Unknown Location';
+  const vinValue = dom.vinInput.value.trim() || '';
   if (barcodeValue) {
     updateStatus(`Manual entry: ${barcodeValue} at ${locationValue}`);
     dom.barcodeInput.value = '';
-    const scanRecord = { barcode: barcodeValue, location: locationValue, timestamp: new Date().toISOString(), method: 'manual' };
+    const scanRecord = { 
+      barcode: barcodeValue, 
+      location: locationValue, 
+      vin: vinValue,
+      timestamp: new Date().toISOString(), 
+      method: 'manual' 
+    };
     saveScanToHistory(scanRecord);
     sendScanToServer(scanRecord);
   } else {
