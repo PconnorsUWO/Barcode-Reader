@@ -7,7 +7,10 @@ export async function sendScanToServer(scanRecord) {
     updateStatus(`Sending ${scanRecord.barcode} to server...`);
     const response = await fetch(`${API_BASE_URL}/api/scan`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'  // Add this header
+      },
       body: JSON.stringify(scanRecord)
     });
     
@@ -33,7 +36,10 @@ export async function fetchAndDisplayPartDetails(partNumber) {
     // Create new endpoint URL for part details
     const response = await fetch(`${API_BASE_URL}/api/part/${partNumber}`, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' }
+      headers: { 
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'  // Add this header
+      }
     });
     
     if (!response.ok) throw new Error(`Could not fetch part details: ${response.status}`);
@@ -174,7 +180,12 @@ export async function fetchAndDisplayPartDetails(partNumber) {
 
 export async function checkServerStatus() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/scan`, { method: 'GET' });
+    const response = await fetch(`${API_BASE_URL}/api/scan`, { 
+      method: 'GET',
+      headers: {
+        'ngrok-skip-browser-warning': 'true'  // Add this header
+      }
+    });
     if (response.ok) {
       updateStatus('Server connected successfully');
       return true;
